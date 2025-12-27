@@ -6,14 +6,17 @@ RUN apt install --no-install-recommends -yy curl unzip build-essential zlib1g-de
 
 # Download and configure GraalVM
 WORKDIR /opt
+ARG TARGETARCH
 ARG GRAAL_VERSION="23.0.1"
 ENV GRAAL_HOME="/opt/graalvm"
+
 RUN \
+    GRAAL_ARCH=$( [ "${TARGETARCH}" = "arm64" ] && echo "aarch64" || echo "x64" ); \
     curl \
         --silent \
         --location \
         --output /tmp/graalvm-ce.tar.gz \
-        https://github.com/graalvm/graalvm-ce-builds/releases/download/jdk-${GRAAL_VERSION}/graalvm-community-jdk-${GRAAL_VERSION}_linux-x64_bin.tar.gz \
+        https://github.com/graalvm/graalvm-ce-builds/releases/download/jdk-${GRAAL_VERSION}/graalvm-community-jdk-${GRAAL_VERSION}_linux-${GRAAL_ARCH}_bin.tar.gz \
     && tar -xzf /tmp/graalvm-ce.tar.gz \
     && mv /opt/graalvm-community-* $GRAAL_HOME \
     && rm /tmp/graalvm-ce.tar.gz

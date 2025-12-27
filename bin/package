@@ -114,16 +114,28 @@ fi
 
 # Linux native image
 if [[ $DIST_TARGET == all || $DIST_TARGET == linux ]]; then
-    CLJSTYLE_LINUX_ARTIFACT="dist/cljstyle_${CLJSTYLE_VERSION}_linux_amd64.zip"
+    ARCH=$(uname -m)
+    case "${ARCH}" in
+        x86_64)
+            PLATFORM=amd64
+            ;;
+        aarch64)
+            PLATFORM=arm64
+            ;;
+        *)
+            echo "Unsupported linux architecture ${ARCH}" >&2
+            exit 1
+    esac
+    CLJSTYLE_LINUX_ARTIFACT="dist/cljstyle_${CLJSTYLE_VERSION}_linux_${ARCH}.zip"
     if [[ ! -f $CLJSTYLE_LINUX_ARTIFACT ]]; then
-        echo -e "\033[0;36mBuilding Linux amd64 binary\033[0m"
+        echo -e "\033[0;36mBuilding Linux ${ARCH} binary\033[0m"
         rm -rf target/dist/linux
         mkdir -p target/dist/linux
-        docker build \
-            --platform linux/amd64 \
+        docker buildx build \
+            --platform "linux/${PLATFORM}" \
             -t "cljstyle-builder:$CLJSTYLE_VERSION" \
             .
-        DOCKER_CONTAINER_ID=$(docker create --platform linux/amd64 "cljstyle-builder:$CLJSTYLE_VERSION")
+        DOCKER_CONTAINER_ID=$(docker create --platform linux/$PLATFORM "cljstyle-builder:$CLJSTYLE_VERSION")
         docker cp "${DOCKER_CONTAINER_ID}:/usr/local/bin/cljstyle" target/dist/linux/cljstyle
         docker container rm "$DOCKER_CONTAINER_ID"
         if [[ ! -f target/dist/linux/cljstyle ]]; then
@@ -141,17 +153,29 @@ fi
 
 # Linux static native image
 if [[ $DIST_TARGET == all || $DIST_TARGET == linux-static ]]; then
-    CLJSTYLE_LINUX_STATIC_ARTIFACT="dist/cljstyle_${CLJSTYLE_VERSION}_linux_amd64_static.zip"
+    ARCH=$(uname -m)
+    case "${ARCH}" in
+        x86_64)
+            PLATFORM=amd64
+            ;;
+        aarch64)
+            PLATFORM=arm64
+            ;;
+        *)
+            echo "Unsupported linux architecture ${ARCH}" >&2
+            exit 1
+    esac
+    CLJSTYLE_LINUX_STATIC_ARTIFACT="dist/cljstyle_${CLJSTYLE_VERSION}_linux_${PLATFORM}_static.zip"
     if [[ ! -f $CLJSTYLE_LINUX_STATIC_ARTIFACT ]]; then
-        echo -e "\033[0;36mBuilding Linux amd64 static binary\033[0m"
+        echo -e "\033[0;36mBuilding Linux ${ARCH} static binary\033[0m"
         rm -rf target/dist/linux-static
         mkdir -p target/dist/linux-static
         docker build \
-            --platform linux/amd64 \
+            --platform "linux/${PLATFORM}" \
             --build-arg GRAAL_STATIC=true \
             -t "cljstyle-static-builder:$CLJSTYLE_VERSION" \
             .
-        DOCKER_CONTAINER_ID=$(docker create --platform linux/amd64 "cljstyle-static-builder:$CLJSTYLE_VERSION")
+        DOCKER_CONTAINER_ID=$(docker create --platform linux/$PLATFORM "cljstyle-static-builder:$CLJSTYLE_VERSION")
         docker cp "${DOCKER_CONTAINER_ID}:/usr/local/bin/cljstyle" target/dist/linux-static/cljstyle
         docker container rm "$DOCKER_CONTAINER_ID"
         if [[ ! -f target/dist/linux-static/cljstyle ]]; then
